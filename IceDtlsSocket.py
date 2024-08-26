@@ -4,6 +4,7 @@ import aioice
 from OpenSSL.SSL import Context, Connection, DTLS_METHOD, WantReadError, VERIFY_PEER, VERIFY_FAIL_IF_NO_PEER_CERT,  OP_NO_QUERY_MTU
 from OpenSSL.crypto import FILETYPE_PEM,  load_privatekey,  load_certificate
 from pylibsrtp import Policy, Session
+from random import randbytes
 
 SRTP_KEY_LEN = 16
 SRTP_SALT_LEN = 14
@@ -25,6 +26,7 @@ class DtlsContext:
             self.ctx.use_privatekey(load_privatekey(FILETYPE_PEM, key_pem))
         if cert_pem != None:
             self.ctx.use_certificate(load_certificate(FILETYPE_PEM, cert_pem))
+        self.cookie = None
         self.remote_fingerprint = remote_fingerprint
         self.ctx.set_cipher_list(b'HIGH:!CAMELLIA:!aNULL')
         self.ctx.set_tlsext_use_srtp(b'SRTP_AES128_CM_SHA1_80')
@@ -34,9 +36,10 @@ class DtlsContext:
 
 
     def generate_cookie(self, ssl):
-        return b"xyzzy"
+        self.cookie = randbytes(5)
+        return self.cookie
     def verify_cookie(self, ssl, cookie):
-        return cookie == b"xyzzy"
+        return cookie == self.cookie
 
     def verify_callback(self, connection, cert, error_number, error_depth, ok):
         if cert != None:
